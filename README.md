@@ -611,3 +611,97 @@ lsmod
 ./hello_drv_test -r
 ```
 
+### 【P33】3\_13-1\_使用Buildroot编译整套系统\_IMX6ULL\_Pro
+
+6 构建 bootloader、内核、文件系统
+
+6.5 构建 IMX6ULL Pro 版的根文件系统
+
+6.5.2 编译系统
+
+```bash
+cd /home/book/100ask_imx6ull-sdk/Buildroot_2020.02.x
+# 清理
+make clean
+# 配置
+make 100ask_imx6ull_pro_ddr512m_systemV_qt5_defconfig
+# 编译需要很长时间，同时需要科学上网
+make all -j4
+```
+
+6.5.3 镜像文件
+
+```bash
+# 查看编译结果
+ls output/images/
+```
+
+![image-20240722002546004](README.assets/image-20240722002546004.png)
+
+或者通过 `tree` 命令查看树形结构
+
+```bash
+tree -L 2 output/images/
+output/images
+├── 100ask_imx6ull-14x14.dtb
+├── 100ask_imx6ull_mini.dtb
+├── 100ask-imx6ull-pro-512d-systemv-v1.img
+├── 100ask_myir_imx6ull_mini.dtb
+├── bootfs.ext4
+├── rootfs.cpio
+├── rootfs.cpio.gz
+├── rootfs.cpio.uboot
+├── rootfs.ext2
+├── rootfs.ext4 -> rootfs.ext2
+├── rootfs.tar
+├── rootfs.tar.bz2
+├── u-boot-dtb.imx
+└── zImage
+```
+
+### 【P35】3\_14-1\_烧写系统\_IMX6ULL\_Pro
+
+开发板串口下操作
+
+```bash
+uname -a
+
+md5sum /boot/zImage
+# b855159c7aff915154251069cea7638a  /boot/zImage
+```
+
+ubuntu 下操作
+
+```bash
+md5sum zImage
+# b855159c7aff915154251069cea7638a  zImage
+```
+
+使用 buildroot 编译出来的系统既支持 LVGL，也支持 QT
+
+如果想使用 QT，可以按如下步骤在开发板串口下操作
+
+```bash
+cd /etc/init.d/
+
+ls
+# S01syslogd  S09modload  S40network          S50mosquitto   S80dnsmasq   rcK
+# S02klogd    S10udev     S44modem-manager    S50pulseaudio  S98swupdate  rcS
+# S02sysctl   S20urandom  S45network-manager  S50sshd        S99myirhmi2
+# S05lvgl     S30dbus     S49ntp              S50telnet      bluetooth
+```
+
+其中，
+
+- `S05lvgl` 是 `LVGL` 的启动文件
+- `S99myirhmi2` 是 `QT` 的启动文件
+
+接着，将 `LVGL` 的启动文件即 `S05lvgl` 移出去（没有 `LVGL` 文件就会默认使用 `QT` 的）
+
+```bash
+mv S05lvgl ../
+
+# 重启系统
+reboot
+```
+
