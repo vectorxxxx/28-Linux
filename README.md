@@ -1802,3 +1802,251 @@ make
 # files3 = a.d b.d c.d d.d e.d abc
 ```
 
+## 【P45】4_3-5Makefile实例
+
+### 1、改进：支持头文件依赖
+
+需要修改的 `Makefile`
+
+```makefile
+test: a.o b.o c.o
+	gcc -o test $^
+
+c.o: c.c c.h
+
+%.o: %.c
+	gcc -c -o $@ $<
+
+clean:
+	rm *.o test
+
+.PHONY: clean
+```
+
+参考文档
+
+- [Linux Makefile 生成 *.d 依赖文件以及 gcc -M -MF -MP 等相关选项说明_gcc -mp-CSDN博客](https://blog.csdn.net/qq1452008/article/details/50855810)
+- [Preprocessor Options (Using the GNU Compiler Collection (GCC))](https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html)
+
+> ```bash
+> -M
+> ```
+>
+> Instead of outputting the result of preprocessing, output a rule suitable for `make` describing the dependencies of the main source file. The preprocessor outputs one `make` rule containing the object file name for that source file, a colon, and the names of all the included files, including those coming from -include or -imacros command-line options.
+>
+> 输出一个适合描述主源文件的依赖关系的规则，而非预处理的结果。预处理器输出一个 make 规则，其中有源文件的对象文件名、冒号和所包含的文件名，包括 -include 或 -imacros 命令行选项的文件名
+>
+> Unless specified explicitly (with -MT or -MQ), the object file name consists of the name of the source file with any suffix replaced with object file suffix and with any leading directory parts removed. If there are many included files then the rule is split into several lines using ‘\’-newline. The rule has no commands.
+>
+> 对象文件名默认是去除目录后的源文件名加对象文件后缀，除非使用 `-MT` 或 `-MQ` 显式指定。如果包含文件很多，就使用“\”换行符将规则分成几行。该规则没有命令
+>
+> This option does not suppress the preprocessor’s debug output, such as -dM. To avoid mixing such debug output with the dependency rules you should explicitly specify the dependency output file with -MF, or use an environment variable like `DEPENDENCIES_OUTPUT` (see [Environment Variables Affecting GCC](https://gcc.gnu.org/onlinedocs/gcc/Environment-Variables.html)). Debug output is still sent to the regular output stream as normal.
+>
+> 该选项不禁止预处理器的调试输出，如 `-dM`。为避免这样的调试输出与依赖规则混用，应显式地用 `-MF` 指定依赖输出文件或者使用像 DEPENDENCIES_OUTPUT 这样的环境变量(参见影响 GCC 的环境变量)。调试输出仍照常输送到常规输出流。
+>
+> Passing -M to the driver implies -E, and suppresses warnings with an implicit -w.
+>
+> `-M` 传递给驱动程序时隐含 `-E`，可以使用隐式的 `-w` 取消警告。
+
+```bash
+# -M(Make)：打印 Makefile 依赖关系
+gcc c.c -M
+```
+
+<details><summary><font size="3" color="orange">输出</font></summary> 
+<pre><code class="language-json">c.o: c.c /usr/include/stdc-predef.h /usr/include/stdio.h \
+ /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
+ /usr/include/features.h /usr/include/x86_64-linux-gnu/sys/cdefs.h \
+ /usr/include/x86_64-linux-gnu/bits/wordsize.h \
+ /usr/include/x86_64-linux-gnu/bits/long-double.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
+ /usr/lib/gcc/x86_64-linux-gnu/7/include/stddef.h \
+ /usr/include/x86_64-linux-gnu/bits/types.h \
+ /usr/include/x86_64-linux-gnu/bits/typesizes.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__FILE.h \
+ /usr/include/x86_64-linux-gnu/bits/types/FILE.h \
+ /usr/include/x86_64-linux-gnu/bits/libio.h \
+ /usr/include/x86_64-linux-gnu/bits/_G_config.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h \
+ /usr/lib/gcc/x86_64-linux-gnu/7/include/stdarg.h \
+ /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/sys_errlist.h c.h</code></pre></details>
+
+> ```bash
+> -MF file
+> ```
+>
+> When used with -M or -MM, specifies a file to write the dependencies to. If no -MF switch is given the preprocessor sends the rules to the same place it would send preprocessed output.
+>
+> `-MF` 与 `-M` 或 `-MM` 一起使用时，可以指定依赖项写入的文件。如果没有 `-MF` 选项，预处理器会将规则发送到相同的地方做预处理输出。
+>
+> When used with the driver options -MD or -MMD, -MF overrides the default dependency output file.
+>
+> `-MF` 与 `-MD` 或 `-MMD` 驱动程序选项一起使用时, 会重写默认的依赖输出文件。
+>
+> If file is -, then the dependencies are written to stdout.
+>
+> 如果 file 是 `-`，则将依赖写入标准输出。
+
+```bash
+# -MF(Make File)：将 Makefile 依赖关系写入文件
+gcc c.c -M -MF c.d
+```
+
+<details><summary><font size="3" color="orange">c.d</font></summary> 
+<pre><code class="language-json">c.o: c.c /usr/include/stdc-predef.h /usr/include/stdio.h \
+ /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
+ /usr/include/features.h /usr/include/x86_64-linux-gnu/sys/cdefs.h \
+ /usr/include/x86_64-linux-gnu/bits/wordsize.h \
+ /usr/include/x86_64-linux-gnu/bits/long-double.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs.h \
+ /usr/include/x86_64-linux-gnu/gnu/stubs-64.h \
+ /usr/lib/gcc/x86_64-linux-gnu/7/include/stddef.h \
+ /usr/include/x86_64-linux-gnu/bits/types.h \
+ /usr/include/x86_64-linux-gnu/bits/typesizes.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__FILE.h \
+ /usr/include/x86_64-linux-gnu/bits/types/FILE.h \
+ /usr/include/x86_64-linux-gnu/bits/libio.h \
+ /usr/include/x86_64-linux-gnu/bits/_G_config.h \
+ /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h \
+ /usr/lib/gcc/x86_64-linux-gnu/7/include/stdarg.h \
+ /usr/include/x86_64-linux-gnu/bits/stdio_lim.h \
+ /usr/include/x86_64-linux-gnu/bits/sys_errlist.h c.h</code></pre></details>
+
+> ```
+> -MD
+> ```
+>
+> -MD is equivalent to -M -MF file, except that -E is not implied. The driver determines file based on whether an -o option is given. If it is, the driver uses its argument but with a suffix of .d, otherwise it takes the name of the input file, removes any directory components and suffix, and applies a .d suffix.
+>
+> `-MD` 相当于 `-M-MF file`，但包含 `-E`。驱动程序根据 `-o` 选项来确定文件，如果有则使用其参数文件名加 `.d` 后缀，否则使用输入文件名加 `.d` 后缀。
+>
+> If -MD is used in conjunction with -E, any -o switch is understood to specify the dependency output file (see [-MF](https://gcc.gnu.org/onlinedocs/gcc/Preprocessor-Options.html#dashMF)), but if used without -E, each -o is understood to specify a target object file.
+>
+> 如果 `-MD` 与 `-E` 结合使用，那使用任意一个 `-o` 选项用来指定依赖输出文件(参见 `-MF`) 。如果不与 `-E` 结合使用，则每一个 `-o` 选项都用来指定目标对象文件。
+>
+> Since -E is not implied, -MD can be used to generate a dependency output file as a side effect of the compilation process.
+>
+> 由于包含 `-E`, `-MD` 可用在编译过程中做生成依赖输出文件的“附作用”
+
+```bash
+# -MD(Make Dependencies)：将 Makefile 依赖关系写入文件，文件名默认为 c.d
+gcc -c -o c.o c.c -MD
+# 如果想指定文件名，可以带上 -MF 选项
+gcc -c -o c.o c.c -MD -MF c.d
+```
+
+参考上述命令修改 `Makefile`
+
+```makefile
+objs = a.o b.o c.o
+
+dep_files := $(patsubst %, .%.d, $(objs))
+dep_files := $(wildcard $(dep_files))
+
+test: $(objs)
+	gcc -o test $^
+
+ifneq ($(dep_files),)
+include $(dep_files)
+endif
+
+%.o: %.c
+	gcc -c -o $@ $< -MD -MF .$@.d
+
+clean:
+	rm *.o test
+
+distclean:
+	rm $(dep_files)
+
+.PHONY: clean
+```
+
+这相当于
+
+```makefile
+# 目标可执行文件  
+test: a.o b.o c.o  
+	gcc -o test a.o b.o c.o  
+
+# 包含依赖文件  
+-include .a.o.d .b.o.d .c.o.d  
+
+# 生成 a.o 目标及其依赖  
+a.o: a.c  
+	gcc -c -o a.o a.c -MD -MF .a.o.d  
+
+# 生成 b.o 目标及其依赖  
+b.o: b.c  
+	gcc -c -o b.o b.c -MD -MF .b.o.d  
+
+# 生成 c.o 目标及其依赖  
+c.o: c.c  
+	gcc -c -o c.o c.c -MD -MF .c.o.d  
+
+clean:  
+	rm *.o test  
+
+distclean:  
+	rm .a.o.d .b.o.d .c.o.d  
+
+.PHONY: clean
+```
+
+文件一旦变多，通配符的优势就显而易见了
+
+> 很多人搞不清 `*`、`%`、`$@`、`$<`、`$^` 的使用时机和使用场景，当然包括我，一开始也是有点迷糊。这里做下对比：
+>
+> - `*`：一般在 Shell 命令如 `ls`、`rm` 中使用
+> - `%`：Makefile 规则定义中使用，表示模式匹配的占位符。它代表任意数量的字符，可以用来匹配文件名
+> - `$@`：当前规则的目标文件名
+> - `$<`：首个前置依赖文件名
+> - `$^`：所有前置依赖文件名
+>
+> 唯一疑惑的一点可能是 `wildcard` 函数中为何使用 `*`，而不是 `%`？！！这里给出我自己的理解：
+>
+> 1. 如果你仔细观察会发现，`%` 一般跟 `$()`、`$@`、`$<` 等配合使用
+> 2. 不同于 `foreach`、`filter`、`filter-out`、`patsubst` 等函数直接接收变量值，`wildcard` 函数比较特殊。它是在系统中查找文件，而且该命令在 linux shell 中也是可以直接使用的
+
+### 2、添加 CFLAGS
+
+修改 `c.c`
+
+```c
+// 当前目录下查找
+// #include "c.h"
+// 根据 -I 选项指定的目录查找
+#include <c.h>
+```
+
+`Makefile`
+
+```makefile
+objs = a.o b.o c.o
+
+dep_files := $(patsubst %, .%.d, $(objs))
+dep_files := $(wildcard $(dep_files))
+
+CFLAGS = -Werror -Iinclude
+
+test: $(objs)
+	gcc -o test $^
+ 
+ifneq ($(dep_files),)
+include $(dep_files)
+endif
+
+%.o: %.c
+	gcc $(CFLAGS) -c -o $@ $< -MD -MF .$@.d
+
+clean:
+	rm *.o test
+
+distclean:
+	rm $(dep_files)
+
+.PHONY: clean
+```
+
